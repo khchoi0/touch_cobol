@@ -27,39 +27,37 @@
        FILE SECTION. 
        FD  MASTER-FILE.
        01  MASTER-RECORD.
-           02 MSTR-ACCT-HOLDER-NAME   PIC A(20).
-           02 MSTR-ACCT-INFO.
-              03 MSTR-ACCT-NUMBER     PIC 9(16).
-              03 MSTR-ACCT-PASSWORD   PIC 9(6).
-           02 MSTR-ACCT-SIGN          PIC X.
-              88 ACCT-POSITIVE        VALUE "+".
-              88 ACCT-NEGATIVE        VALUE "-".
-           02 MSTR-ACCT-BALANCE       PIC 9(13)V9(2).
-
-       FD  T71-ONE-FILE.
-       01  T71-ONE-RECORD.
-           02 ONE-ACCT-NUMBER         PIC 9(16).
-           02 ONE-OPERATION           PIC A.
-           02 ONE-AMOUNT              PIC 9(5)V9(2).
-           02 ONE-TIMESTAMP           PIC 9(5).
-
-       FD  T71-THREE-FILE.
-       01  T71-THREE-RECORD.
-           02 THREE-ACCT-NUMBER       PIC 9(16).
-           02 THREE-OPERATION         PIC A.
-           02 THREE-AMOUNT            PIC 9(5)V9(2).
-           02 THREE-TIMESTAMP         PIC 9(5).
+           02 MSTR-ACCT-HOLDER-NAME         PIC X(20).
+           02 MSTR-ACCT-INFO.      
+              03 MSTR-ACCT-NUMBER           PIC 9(16).
+              03 MSTR-ACCT-PASSWORD         PIC 9(6).
+           02 MSTR-ACCT-SIGN                PIC X.
+              88 ACCT-POSITIVE              VALUE "+".
+              88 ACCT-NEGATIVE              VALUE "-".
+           02 MSTR-ACCT-BALANCE             PIC 9(13)V9(2).
+      
+       FD  T71-ONE-FILE.      
+       01  T71-ONE-RECORD.      
+           02 ONE-ACCT-NUMBER               PIC 9(16).
+           02 ONE-OPERATION                 PIC A.
+           02 ONE-AMOUNT                    PIC 9(5)V9(2).
+           02 ONE-TIMESTAMP                 PIC 9(5).
+      
+       FD  T71-THREE-FILE.      
+       01  T71-THREE-RECORD.      
+           02 THREE-ACCT-NUMBER             PIC 9(16).
+           02 THREE-OPERATION               PIC A.
+           02 THREE-AMOUNT                  PIC 9(5)V9(2).
+           02 THREE-TIMESTAMP               PIC 9(5).
 
        WORKING-STORAGE SECTION. 
        01  MASTER-FILE-STATUS               PIC 99.
            88 MASTER-FILE-ALREADY-OPEN      VALUE 41.
+           88 MASTER-FILE-EOF-REACHED       VALUE 10.
        01  T71-ONE-FILE-STATUS              PIC 99.
            88 T71-ONE-FILE-ALREADY-OPEN     VALUE 41.
        01  T71-THREE-FILE-STATUS            PIC 99.
            88 T71-THREE-FILE-ALREADY-OPEN   VALUE 41.
-
-       01  MASTER-FILE-EOF-STATUS                PIC 9.
-           88 EOF-REACHED                   VALUE 1.
 
        01  USER-ATM-CHOICE                  PIC 9.
            88 ATM-71-ONE                    VALUE 1.
@@ -287,13 +285,12 @@
            END-IF.
 
            READ MASTER-FILE
-              AT END SET EOF-REACHED TO TRUE
+              AT END SET MASTER-FILE-EOF-REACHED TO TRUE
            END-READ.
 
-           IF EOF-REACHED 
+           IF MASTER-FILE-EOF-REACHED 
            THEN 
               CLOSE MASTER-FILE 
-              MOVE 0 TO MASTER-FILE-EOF-STATUS 
               IF VALIDATING-USER-INFO 
               THEN
                  DISPLAY "INCORRECT ACCOUNT/PASSWORD"
