@@ -153,13 +153,10 @@
 
        01  ALU-REGISTER                        PIC S9(14)V9(2) VALUE 1.
 
-       01  MASTER-ITERATION-STATUS             PIC 9 VALUE 2.
-           88 ITERATION-INITIALIZED            VALUE 1.
-           88 NEXT-ACCT                        VALUE 1 THRU 2.
-           88 SEARCHING-FOR-ACCT-TRANSAC              VALUE 3.
-
-      *01 MASTER-INITIALIZATION-STATUS         PIC 9 VALUE 0.
-      *    88 ITERATION-INITIALIZED            VALUE 1.
+       01  MASTER-ITERATION-STATUS             PIC 9 VALUE 1.
+           88 ITERATION-INITIALIZED            VALUE 0.
+           88 NEXT-ACCT                        VALUE 0 THRU 1.
+           88 SEARCHING-FOR-ACCT-TRANSAC       VALUE 2.
 
        01  BARRED-ACCT-BUFFER.
            02 PREFIX-NAME                      PIC X(6) 
