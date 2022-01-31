@@ -161,12 +161,12 @@
        01  BARRED-ACCT-BUFFER.
            02 PREFIX-NAME                      PIC X(6) 
               VALUE "Name: ".
-           02 BARRED-ACCT-HOLDER-NAME          PIC X(20).
-           02 PREFIX-ACCT-NUMBER               PIC X(17) 
-              VALUE " Account Number: ".
-           02 BARRED-ACCT-NUMBER               PIC 9(16).
+           02 BARRED-HOLDER-NAME               PIC X(20).
+           02 PREFIX-NUMBER                    PIC X(17) 
+              VALUE " Account Number: ".     
+           02 BARRED-NUMBER                    PIC 9(16).
            02 PREFIX-BALANCE                   PIC X(10)
-              VALUE " Balance: ".
+              VALUE " Balance: ".     
            02 BARRED-BALANCE                   PIC X(16).
 
        PROCEDURE DIVISION.
@@ -397,9 +397,9 @@
 
            IF UPDATED-ACCT-NEGATIVE 
            THEN 
-              MOVE UPDATED-ACCT-HOLDER-NAME TO BARRED-ACCT-HOLDER-NAME
-              MOVE UPDATED-ACCT-NUMBER TO BARRED-ACCT-NUMBER
-              MOVE UPDATED-ACCT-BALANCE TO BARRED-BALANCE
+              MOVE UPDATED-ACCT-HOLDER-NAME TO BARRED-HOLDER-NAME
+              MOVE UPDATED-ACCT-NUMBER      TO BARRED-NUMBER
+              MOVE UPDATED-ACCT-BALANCE     TO BARRED-BALANCE
               WRITE REPORT-RECORD FROM BARRED-ACCT-BUFFER
               DISPLAY REPORT-RECORD 
            END-IF.
