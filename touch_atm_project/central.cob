@@ -153,13 +153,13 @@
 
        01  ALU-REGISTER                        PIC S9(14)V9(2) VALUE 1.
 
-       01  MASTER-ITERATION-STATUS             PIC 9 VALUE 0.
-           88 NEXT-ACCT                        VALUE 0.
-           88 FINDING-TRANSACTION              VALUE 1.
-           88 UPDATING-ACCT-TRANSACTION        VALUE 2.
-
-       01 MASTER-INITIALIZATION-STATUS         PIC 9 VALUE 0.
+       01  MASTER-ITERATION-STATUS             PIC 9 VALUE 2.
            88 ITERATION-INITIALIZED            VALUE 1.
+           88 NEXT-ACCT                        VALUE 1 THRU 2.
+           88 SEARCHING-FOR-ACCT-TRANSAC              VALUE 3.
+
+      *01 MASTER-INITIALIZATION-STATUS         PIC 9 VALUE 0.
+      *    88 ITERATION-INITIALIZED            VALUE 1.
 
        01  BARRED-ACCT-BUFFER.
            02 PREFIX-NAME                      PIC X(6) 
@@ -174,7 +174,7 @@
 
        PROCEDURE DIVISION.
        SORT-TRANS-FILES.
-           DISPLAY " "
+           DISPLAY SPACES
            DISPLAY "=========================================="
            SORT WORK-FILE 
               ON ASCENDING KEY WORK-ACCT-NUMBER 
@@ -214,6 +214,7 @@
            END-IF.
 
            DISPLAY "TRANS FILES BOTH EMPTY"
+           DISPLAY SPACES
            CLOSE SORTED-T71-ONE-FILE, SORTED-T71-THREE-FILE.
            CLOSE SORTED-TRANS-FILE.
            GO TO UPDATE-MASTER-FILE.
@@ -224,12 +225,12 @@
               SORTED-ONE-TIMESTAMP < SORTED-THREE-TIMESTAMP
            THEN 
               WRITE SORTED-TRANS-RECORD FROM SORTED-T71-ONE-RECORD
-              DISPLAY "[ TS] ONE < THREE: " SORTED-TRANS-RECORD
+              DISPLAY "[ TS] ONE < THREE: " SORTED-TRANS-RECORD " (711)"
               READ SORTED-T71-ONE-FILE 
                  AT END
                     MOVE HIGH-VALUES TO SORTED-T71-ONE-RECORD
                     SET SORTED-ONE-FILE-EOF-REACHED TO TRUE
-                    DISPLAY "~~~~~~~~~~~~> EOF: SORTED-T71-ONE-FILE"
+                    DISPLAY "              EOF: SORTED-T71-ONE-FILE"
               END-READ
            END-IF.
 
@@ -238,36 +239,36 @@
               SORTED-ONE-TIMESTAMP > SORTED-THREE-TIMESTAMP
            THEN 
               WRITE SORTED-TRANS-RECORD FROM SORTED-T71-THREE-RECORD
-              DISPLAY "[ TS] ONE > THREE: " SORTED-TRANS-RECORD
+              DISPLAY "[ TS] ONE > THREE: " SORTED-TRANS-RECORD " (713)"
               READ SORTED-T71-THREE-FILE 
                  AT END
                     MOVE HIGH-VALUES TO SORTED-T71-THREE-RECORD
                     SET SORTED-THREE-FILE-EOF-REACHED TO TRUE
-                    DISPLAY "~~~~~~~~~~~~> EOF: SORTED-T71-THREE-FILE"
+                    DISPLAY "              EOF: SORTED-T71-THREE-FILE"
               END-READ
            END-IF.
 
            IF SORTED-ONE-ACCT-NUMBER < SORTED-THREE-ACCT-NUMBER 
            THEN 
               WRITE SORTED-TRANS-RECORD FROM SORTED-T71-ONE-RECORD
-              DISPLAY "[NUM] ONE < THREE: " SORTED-TRANS-RECORD
+              DISPLAY "[NUM] ONE < THREE: " SORTED-TRANS-RECORD " (711)"
               READ SORTED-T71-ONE-FILE 
                  AT END
                     MOVE HIGH-VALUES TO SORTED-T71-ONE-RECORD
                     SET SORTED-ONE-FILE-EOF-REACHED TO TRUE
-                    DISPLAY "~~~~~~~~~~~~> EOF: SORTED-T71-ONE-FILE"
+                    DISPLAY "              EOF: SORTED-T71-ONE-FILE"
               END-READ
            END-IF.
 
            IF SORTED-ONE-ACCT-NUMBER > SORTED-THREE-ACCT-NUMBER 
            THEN 
               WRITE SORTED-TRANS-RECORD FROM SORTED-T71-THREE-RECORD
-              DISPLAY "[NUM] ONE > THREE: " SORTED-TRANS-RECORD
+              DISPLAY "[NUM] ONE > THREE: " SORTED-TRANS-RECORD " (713)"
               READ SORTED-T71-THREE-FILE 
                  AT END
                     MOVE HIGH-VALUES TO SORTED-T71-THREE-RECORD
                     SET SORTED-THREE-FILE-EOF-REACHED TO TRUE
-                    DISPLAY "~~~~~~~~~~~~> EOF: SORTED-T71-THREE-FILE"
+                    DISPLAY "              EOF: SORTED-T71-THREE-FILE"
               END-READ
            END-IF.
            
@@ -278,8 +279,7 @@
              GO TO MERGE-TRANS-FILES 
            END-IF.
            
-           DISPLAY " "
-           DISPLAY "MERGED: [TWO] TRANSACTION FILES"
+           DISPLAY "           MERGED: [TWO] TRANSAC FILES"
            CLOSE SORTED-T71-ONE-FILE, SORTED-T71-THREE-FILE.
            CLOSE SORTED-TRANS-FILE.
            GO TO UPDATE-MASTER-FILE.
@@ -291,7 +291,7 @@
               THEN 
                  WRITE UPDATED-MASTER-RECORD FROM MASTER-RECORD
                  DISPLAY "WRITTEN BALANCE: " UPDATED-ACCT-BALANCE
-                 DISPLAY " "
+                 DISPLAY SPACES
                  CLOSE SORTED-TRANS-FILE
                  OPEN INPUT SORTED-TRANS-FILE
               END-IF
@@ -312,36 +312,35 @@
                     CLOSE SORTED-TRANS-FILE 
                     GO TO GENERATE-NEGATIVE-REPORT
               END-READ
-              SET FINDING-TRANSACTION TO TRUE
+              SET SEARCHING-FOR-ACCT-TRANSAC TO TRUE
               DISPLAY "=========================================="
+              DISPLAY SPACES
               DISPLAY MASTER-RECORD 
-              DISPLAY " "
-              DISPLAY "TRANSAC ITERATION RECORDS: "
+              DISPLAY SPACES
+              DISPLAY "TRANSACTION RECORD SEARCHING: "
            END-IF.
 
            READ SORTED-TRANS-FILE
               AT END
                  SET NEXT-ACCT TO TRUE
-                 DISPLAY "EOF: SORTED-TRANSAC-FILE"
-                 DISPLAY " "
+                 DISPLAY "> EOF: SORTED-TRANSAC-FILE......<"
+                         "~ [END SEARCHING]"
+                 DISPLAY SPACES
                  GO TO UPDATE-MASTER-FILE 
            END-READ.
            
            IF 
-              UPDATING-ACCT-TRANSACTION AND
-              NOT SORTED-TRANS-ACCT-NUMBER = MSTR-ACCT-NUMBER 
+              SORTED-TRANS-ACCT-NUMBER > MSTR-ACCT-NUMBER
            THEN 
               SET NEXT-ACCT TO TRUE
-              DISPLAY "~~> ANOTHER ACCT TRANSAC DETECTED: "
-              DISPLAY "> " SORTED-TRANS-RECORD  " <"
-              DISPLAY " "
+              DISPLAY "> " SORTED-TRANS-RECORD  " <~ [END SEARCHING]"
+              DISPLAY SPACES
               GO TO UPDATE-MASTER-FILE
            END-IF.
            DISPLAY "> " SORTED-TRANS-RECORD  " <".
    
            IF SORTED-TRANS-ACCT-NUMBER = MSTR-ACCT-NUMBER 
            THEN 
-              SET UPDATING-ACCT-TRANSACTION TO TRUE
               IF MSTR-ACCT-SIGN = "+"
               THEN 
                  MOVE MSTR-ACCT-BALANCE-UNSIGNED TO ALU-REGISTER
@@ -353,7 +352,8 @@
               END-IF
               DISPLAY "~~~~~~~~~~~~~~~> ORIGINAL BALANCE: " ALU-REGISTER
               DISPLAY "~~~~~~~~~~~~~~~>      TRANSACTION: " 
-                 SORTED-TRANS-OPERATION "         " SORTED-TRANS-AMOUNT 
+                      SORTED-TRANS-OPERATION "         " 
+                      SORTED-TRANS-AMOUNT 
 
               IF SORTED-TRANS-OPERATION = "D"
               THEN 
@@ -374,7 +374,7 @@
                  END-IF 
               END-IF
               DISPLAY "~~~~~~~~~~~~~~~>  UPDATED BALANCE: " ALU-REGISTER
-              DISPLAY " "
+              DISPLAY SPACES
 
               MOVE ALU-REGISTER TO MSTR-ACCT-BALANCE-UNSIGNED
            END-IF.
@@ -392,8 +392,8 @@
 
            READ UPDATED-MASTER-FILE 
               AT END 
-                 DISPLAY "=================END REPORT================="
-                 DISPLAY " "
+                 DISPLAY "=========================================="
+                 DISPLAY SPACES
                  CLOSE UPDATED-MASTER-FILE, NEGATIVE-REPORT-FILE
                  STOP RUN
            END-READ.
