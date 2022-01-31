@@ -36,10 +36,10 @@
               FILE STATUS IS SORTED-T71-THREE-FILE-STATUS.
 
            SELECT 
-              SORTED-T-FILE ASSIGN TO "transSorted.txt"
+              SORTED-TRANS-FILE ASSIGN TO "transSorted.txt"
               ORGANIZATION IS LINE SEQUENTIAL
               ACCESS MODE IS SEQUENTIAL
-              FILE STATUS IS SORTED-T-FILE-STATUS.
+              FILE STATUS IS SORTED-TRANS-FILE-STATUS.
 
            SELECT 
               UPDATED-MASTER-FILE ASSIGN TO "updatedMaster.txt"
@@ -64,9 +64,9 @@
               03 MSTR-ACCT-NUMBER              PIC 9(16).
               03 MSTR-ACCT-PASSWORD            PIC 9(6).
            02 MSTR-ACCT-SIGN                   PIC X.
-              88 ACCT-POSITIVE                 VALUE "+".
-              88 ACCT-NEGATIVE                 VALUE "-".
-           02 MSTR-ACCT-BALANCE                PIC 9(13)V9(2).
+              88 MSTR-ACCT-POSITIVE            VALUE "+".
+              88 MSTR-ACCT-NEGATIVE            VALUE "-".
+           02 MSTR-ACCT-BALANCE-UNSIGNED       PIC 9(13)V9(2).
          
        FD  T71-ONE-FILE.         
        01  T71-ONE-RECORD.         
@@ -96,12 +96,12 @@
            02 SORTED-THREE-AMOUNT              PIC 9(5)V9(2).
            02 SORTED-THREE-TIMESTAMP           PIC 9(5).
 
-       FD  SORTED-T-FILE.      
-       01  SORTED-T-RECORD.      
-           02 SORTED-T-ACCT-NUMBER             PIC 9(16).
-           02 SORTED-T-OPERATION               PIC A.
-           02 SORTED-T-AMOUNT                  PIC 9(5)V9(2).
-           02 SORTED-T-TIMESTAMP               PIC 9(5).
+       FD  SORTED-TRANS-FILE.      
+       01  SORTED-TRANS-RECORD.      
+           02 SORTED-TRANS-ACCT-NUMBER         PIC 9(16).
+           02 SORTED-TRANS-OPERATION           PIC A.
+           02 SORTED-TRANS-AMOUNT              PIC 9(5)V9(2).
+           02 SORTED-TRANS-TIMESTAMP           PIC 9(5).
 
        FD  UPDATED-MASTER-FILE.
        01  UPDATED-MASTER-RECORD.
@@ -109,19 +109,19 @@
            02 UPDATED-ACCT-INFO.      
               03 UPDATED-ACCT-NUMBER           PIC 9(16).
               03 UPDATED-ACCT-PASSWORD         PIC 9(6).
-           02 UPDATED-BALANCE.
+           02 UPDATED-ACCT-BALANCE.
               03 UPDATED-ACCT-SIGN             PIC X.
                  88 UPDATED-ACCT-POSITIVE      VALUE "+".
                  88 UPDATED-ACCT-NEGATIVE      VALUE "-".
-              03 UPDATED-BALANCE-NUMBERICAL    PIC 9(13)V9(2).
+              03 UPDATED-ACCT-BALANCE-UNSIGNED PIC 9(13)V9(2).
 
        FD  NEGATIVE-REPORT-FILE.
        01  REPORT-RECORD.
            02 PREFIX-NAME                      PIC X(6).
            02 REPORT-ACCT-HOLDER-NAME          PIC X(20).
-           02 PREFIX-ACCT-NUMBER               PIC X(16).
+           02 PREFIX-ACCT-NUMBER               PIC X(17).
            02 REPORT-ACCT-NUMBER               PIC 9(16).
-           02 PREFIX-BALANCE                   PIC X(9).
+           02 PREFIX-BALANCE                   PIC X(10).
            02 REPORT-BALANCE                   PIC X(16).
 
        SD  WORK-FILE.
@@ -144,39 +144,34 @@
        01  SORTED-T71-THREE-FILE-STATUS        PIC 99.
            88 SORTED-THREE-FILE-ALREADY-OPEN   VALUE 41.
            88 SORTED-THREE-FILE-EOF-REACHED    VALUE 10.
-       01  SORTED-T-FILE-STATUS                PIC 99.
-           88 SORTED-T-FILE-ALREADY-OPEN       VALUE 41.
-           88 SORTED-T-FILE-EOF-REACHED        VALUE 10.
+       01  SORTED-TRANS-FILE-STATUS            PIC 99.
+           88 SORTED-TRANS-FILE-ALREADY-OPEN   VALUE 41.
        01  UPDATED-MASTER-FILE-STATUS          PIC 99.
            88 UPDATED-FILE-ALREADY-OPEN        VALUE 41.
-           88 UPDATED-FILE-EOF-REACHED         VALUE 10.
        01  NEGATIVE-REPORT-FILE-STATUS         PIC 99.
            88 REPORT-FILE-ALREADY-OPEN         VALUE 41.
 
        01  ALU-REGISTER                        PIC S9(14)V9(2) VALUE 1.
 
-       01  MASTER-ITERATION-STATUS             PIC 9 VALUE 0.
-           88 NEXT-ACCT                        VALUE 0.
-           88 FINDING-TRANSACTION              VALUE 1.
-           88 UPDATING-ACCT-TRANSACTION        VALUE 2.
+       01  MASTER-ITERATION-STATUS             PIC 9 VALUE 1.
+           88 ITERATION-INITIALIZED            VALUE 0.
+           88 NEXT-ACCT                        VALUE 0 THRU 1.
+           88 SEARCHING-FOR-ACCT-TRANSAC       VALUE 2.
 
-       01 MASTER-INITIALIZATION-STATUS         PIC 9 VALUE 0.
-           88 ITERATION-INITIALIZED            VALUE 1.
-
-       01  BARRED-ACCT-RECORD.
+       01  BARRED-ACCT-BUFFER.
            02 PREFIX-NAME                      PIC X(6) 
-                                               VALUE "Name: ".
-           02 BARRED-ACCT-HOLDER-NAME          PIC X(20).
-           02 PREFIX-ACCT-NUMBER               PIC X(16) 
-                                               VALUE "Account Number: ".
-           02 BARRED-ACCT-NUMBER               PIC 9(16).
-           02 PREFIX-BALANCE                   PIC X(9)
-                                               VALUE "Balance: ".
+              VALUE "Name: ".
+           02 BARRED-HOLDER-NAME               PIC X(20).
+           02 PREFIX-NUMBER                    PIC X(17) 
+              VALUE " Account Number: ".     
+           02 BARRED-NUMBER                    PIC 9(16).
+           02 PREFIX-BALANCE                   PIC X(10)
+              VALUE " Balance: ".     
            02 BARRED-BALANCE                   PIC X(16).
 
        PROCEDURE DIVISION.
        SORT-TRANS-FILES.
-           DISPLAY " "
+           DISPLAY SPACES
            DISPLAY "=========================================="
            SORT WORK-FILE 
               ON ASCENDING KEY WORK-ACCT-NUMBER 
@@ -194,7 +189,7 @@
 
            DISPLAY "=========================================="
            OPEN INPUT SORTED-T71-ONE-FILE, SORTED-T71-THREE-FILE.
-           OPEN OUTPUT SORTED-T-FILE.
+           OPEN OUTPUT SORTED-TRANS-FILE.
            
            READ SORTED-T71-ONE-FILE
               AT END 
@@ -209,15 +204,16 @@
            END-READ.
 
            IF 
-              NOT SORTED-ONE-FILE-EOF-REACHED AND 
+              NOT SORTED-ONE-FILE-EOF-REACHED OR 
               NOT SORTED-THREE-FILE-EOF-REACHED
            THEN 
               GO TO MERGE-TRANS-FILES
            END-IF.
 
            DISPLAY "TRANS FILES BOTH EMPTY"
+           DISPLAY SPACES
            CLOSE SORTED-T71-ONE-FILE, SORTED-T71-THREE-FILE.
-           CLOSE SORTED-T-FILE.
+           CLOSE SORTED-TRANS-FILE.
            GO TO UPDATE-MASTER-FILE.
 
        MERGE-TRANS-FILES.
@@ -225,13 +221,13 @@
               SORTED-ONE-ACCT-NUMBER = SORTED-THREE-ACCT-NUMBER AND 
               SORTED-ONE-TIMESTAMP < SORTED-THREE-TIMESTAMP
            THEN 
-              WRITE SORTED-T-RECORD FROM SORTED-T71-ONE-RECORD
-              DISPLAY "[ TS] ONE < THREE: " SORTED-T-RECORD
+              WRITE SORTED-TRANS-RECORD FROM SORTED-T71-ONE-RECORD
+              DISPLAY "[ TS] ONE < THREE: " SORTED-TRANS-RECORD " (711)"
               READ SORTED-T71-ONE-FILE 
                  AT END
                     MOVE HIGH-VALUES TO SORTED-T71-ONE-RECORD
                     SET SORTED-ONE-FILE-EOF-REACHED TO TRUE
-                    DISPLAY "~~~~~~~~~~~~> EOF: SORTED-T71-ONE-FILE"
+                    DISPLAY "              EOF: SORTED-T71-ONE-FILE"
               END-READ
            END-IF.
 
@@ -239,37 +235,37 @@
               SORTED-ONE-ACCT-NUMBER = SORTED-THREE-ACCT-NUMBER AND 
               SORTED-ONE-TIMESTAMP > SORTED-THREE-TIMESTAMP
            THEN 
-              WRITE SORTED-T-RECORD FROM SORTED-T71-THREE-RECORD
-              DISPLAY "[ TS] ONE > THREE: " SORTED-T-RECORD
+              WRITE SORTED-TRANS-RECORD FROM SORTED-T71-THREE-RECORD
+              DISPLAY "[ TS] ONE > THREE: " SORTED-TRANS-RECORD " (713)"
               READ SORTED-T71-THREE-FILE 
                  AT END
                     MOVE HIGH-VALUES TO SORTED-T71-THREE-RECORD
                     SET SORTED-THREE-FILE-EOF-REACHED TO TRUE
-                    DISPLAY "~~~~~~~~~~~~> EOF: SORTED-T71-THREE-FILE"
+                    DISPLAY "              EOF: SORTED-T71-THREE-FILE"
               END-READ
            END-IF.
 
            IF SORTED-ONE-ACCT-NUMBER < SORTED-THREE-ACCT-NUMBER 
            THEN 
-              WRITE SORTED-T-RECORD FROM SORTED-T71-ONE-RECORD
-              DISPLAY "[NUM] ONE < THREE: " SORTED-T-RECORD
+              WRITE SORTED-TRANS-RECORD FROM SORTED-T71-ONE-RECORD
+              DISPLAY "[NUM] ONE < THREE: " SORTED-TRANS-RECORD " (711)"
               READ SORTED-T71-ONE-FILE 
                  AT END
                     MOVE HIGH-VALUES TO SORTED-T71-ONE-RECORD
                     SET SORTED-ONE-FILE-EOF-REACHED TO TRUE
-                    DISPLAY "~~~~~~~~~~~~> EOF: SORTED-T71-ONE-FILE"
+                    DISPLAY "              EOF: SORTED-T71-ONE-FILE"
               END-READ
            END-IF.
 
            IF SORTED-ONE-ACCT-NUMBER > SORTED-THREE-ACCT-NUMBER 
            THEN 
-              WRITE SORTED-T-RECORD FROM SORTED-T71-THREE-RECORD
-              DISPLAY "[NUM] ONE > THREE: " SORTED-T-RECORD
+              WRITE SORTED-TRANS-RECORD FROM SORTED-T71-THREE-RECORD
+              DISPLAY "[NUM] ONE > THREE: " SORTED-TRANS-RECORD " (713)"
               READ SORTED-T71-THREE-FILE 
                  AT END
                     MOVE HIGH-VALUES TO SORTED-T71-THREE-RECORD
                     SET SORTED-THREE-FILE-EOF-REACHED TO TRUE
-                    DISPLAY "~~~~~~~~~~~~> EOF: SORTED-T71-THREE-FILE"
+                    DISPLAY "              EOF: SORTED-T71-THREE-FILE"
               END-READ
            END-IF.
            
@@ -280,10 +276,9 @@
              GO TO MERGE-TRANS-FILES 
            END-IF.
            
-           DISPLAY " "
-           DISPLAY "MERGED: [TWO] TRANSACTION FILES"
+           DISPLAY "           MERGED: [TWO] TRANSAC FILES"
            CLOSE SORTED-T71-ONE-FILE, SORTED-T71-THREE-FILE.
-           CLOSE SORTED-T-FILE.
+           CLOSE SORTED-TRANS-FILE.
            GO TO UPDATE-MASTER-FILE.
 
        UPDATE-MASTER-FILE.
@@ -292,15 +287,15 @@
               IF ITERATION-INITIALIZED 
               THEN 
                  WRITE UPDATED-MASTER-RECORD FROM MASTER-RECORD
-                 DISPLAY "WRITTEN BALANCE: " UPDATED-BALANCE
-                 DISPLAY " "
-                 CLOSE SORTED-T-FILE
-                 OPEN INPUT SORTED-T-FILE
+                 DISPLAY "WRITTEN BALANCE: " UPDATED-ACCT-BALANCE
+                 DISPLAY SPACES
+                 CLOSE SORTED-TRANS-FILE
+                 OPEN INPUT SORTED-TRANS-FILE
               END-IF
 
               IF NOT ITERATION-INITIALIZED
               THEN 
-                 OPEN INPUT MASTER-FILE, SORTED-T-FILE
+                 OPEN INPUT MASTER-FILE, SORTED-TRANS-FILE
                  OPEN OUTPUT UPDATED-MASTER-FILE
                  SET ITERATION-INITIALIZED TO TRUE
               END-IF
@@ -311,60 +306,64 @@
                     DISPLAY "EOF: MASTER-FILE"
                     DISPLAY "=========================================="
                     CLOSE MASTER-FILE, UPDATED-MASTER-FILE
-                    CLOSE SORTED-T-FILE 
+                    CLOSE SORTED-TRANS-FILE 
                     GO TO GENERATE-NEGATIVE-REPORT
               END-READ
-              SET FINDING-TRANSACTION TO TRUE
+              SET SEARCHING-FOR-ACCT-TRANSAC TO TRUE
               DISPLAY "=========================================="
+              DISPLAY SPACES
               DISPLAY MASTER-RECORD 
-              DISPLAY " "
-              DISPLAY "TRANSAC ITERATION RECORDS: "
+              DISPLAY SPACES
+              DISPLAY "TRANSACTION RECORD SEARCHING: "
            END-IF.
 
-           READ SORTED-T-FILE
+           READ SORTED-TRANS-FILE
               AT END
                  SET NEXT-ACCT TO TRUE
-                 DISPLAY "EOF: SORTED-TRANSAC-FILE"
-                 DISPLAY " "
+                 DISPLAY "> EOF: SORTED-TRANSAC-FILE......<"
+                         "~ [END SEARCHING]"
+                 DISPLAY SPACES
                  GO TO UPDATE-MASTER-FILE 
            END-READ.
            
            IF 
-              UPDATING-ACCT-TRANSACTION AND
-              NOT SORTED-T-ACCT-NUMBER = MSTR-ACCT-NUMBER 
+              SORTED-TRANS-ACCT-NUMBER > MSTR-ACCT-NUMBER
            THEN 
               SET NEXT-ACCT TO TRUE
+              DISPLAY "> " SORTED-TRANS-RECORD  " <~ [END SEARCHING]"
+              DISPLAY SPACES
               GO TO UPDATE-MASTER-FILE
            END-IF.
-           DISPLAY "> " SORTED-T-RECORD  " <".
+           DISPLAY "> " SORTED-TRANS-RECORD  " <".
    
-           IF SORTED-T-ACCT-NUMBER = MSTR-ACCT-NUMBER 
+           IF SORTED-TRANS-ACCT-NUMBER = MSTR-ACCT-NUMBER 
            THEN 
-              SET UPDATING-ACCT-TRANSACTION TO TRUE
               IF MSTR-ACCT-SIGN = "+"
               THEN 
-                 MOVE MSTR-ACCT-BALANCE TO ALU-REGISTER
+                 MOVE MSTR-ACCT-BALANCE-UNSIGNED TO ALU-REGISTER
               END-IF
               IF MSTR-ACCT-SIGN = "-"
               THEN 
-                 MOVE MSTR-ACCT-BALANCE TO ALU-REGISTER
+                 MOVE MSTR-ACCT-BALANCE-UNSIGNED TO ALU-REGISTER
                  MULTIPLY ALU-REGISTER BY -1 GIVING ALU-REGISTER
               END-IF
               DISPLAY "~~~~~~~~~~~~~~~> ORIGINAL BALANCE: " ALU-REGISTER
               DISPLAY "~~~~~~~~~~~~~~~>      TRANSACTION: " 
-                 SORTED-T-OPERATION "         " SORTED-T-AMOUNT 
-              IF SORTED-T-OPERATION = "D"
+                      SORTED-TRANS-OPERATION "         " 
+                      SORTED-TRANS-AMOUNT 
+
+              IF SORTED-TRANS-OPERATION = "D"
               THEN 
-                 ADD SORTED-T-AMOUNT TO ALU-REGISTER 
+                 ADD SORTED-TRANS-AMOUNT TO ALU-REGISTER 
                     GIVING ALU-REGISTER 
                  IF ALU-REGISTER IS POSITIVE 
                  THEN 
                     MOVE "+" TO MSTR-ACCT-SIGN
                  END-IF
               END-IF
-              IF SORTED-T-OPERATION = "W"
+              IF SORTED-TRANS-OPERATION = "W"
               THEN 
-                 SUBTRACT SORTED-T-AMOUNT FROM ALU-REGISTER  
+                 SUBTRACT SORTED-TRANS-AMOUNT FROM ALU-REGISTER  
                     GIVING ALU-REGISTER 
                  IF ALU-REGISTER IS NEGATIVE 
                  THEN 
@@ -372,14 +371,16 @@
                  END-IF 
               END-IF
               DISPLAY "~~~~~~~~~~~~~~~>  UPDATED BALANCE: " ALU-REGISTER
-              DISPLAY " "
-              MOVE ALU-REGISTER TO MSTR-ACCT-BALANCE
+              DISPLAY SPACES
+
+              MOVE ALU-REGISTER TO MSTR-ACCT-BALANCE-UNSIGNED
            END-IF.
 
            GO TO UPDATE-MASTER-FILE.
 
        GENERATE-NEGATIVE-REPORT.
-           IF NOT UPDATED-FILE-ALREADY-OPEN OR 
+           IF 
+              NOT UPDATED-FILE-ALREADY-OPEN OR 
               NOT REPORT-FILE-ALREADY-OPEN 
            THEN 
               OPEN INPUT UPDATED-MASTER-FILE
@@ -388,18 +389,18 @@
 
            READ UPDATED-MASTER-FILE 
               AT END 
-                 DISPLAY "=================END REPORT================="
-                 DISPLAY " "
+                 DISPLAY "=========================================="
+                 DISPLAY SPACES
                  CLOSE UPDATED-MASTER-FILE, NEGATIVE-REPORT-FILE
                  STOP RUN
            END-READ.
 
            IF UPDATED-ACCT-NEGATIVE 
            THEN 
-              MOVE UPDATED-ACCT-HOLDER-NAME TO BARRED-ACCT-HOLDER-NAME
-              MOVE UPDATED-ACCT-NUMBER TO BARRED-ACCT-NUMBER
-              MOVE UPDATED-BALANCE TO BARRED-BALANCE
-              WRITE REPORT-RECORD FROM BARRED-ACCT-RECORD
+              MOVE UPDATED-ACCT-HOLDER-NAME TO BARRED-HOLDER-NAME
+              MOVE UPDATED-ACCT-NUMBER      TO BARRED-NUMBER
+              MOVE UPDATED-ACCT-BALANCE     TO BARRED-BALANCE
+              WRITE REPORT-RECORD FROM BARRED-ACCT-BUFFER
               DISPLAY REPORT-RECORD 
            END-IF.
 
