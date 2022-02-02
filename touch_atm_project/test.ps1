@@ -21,7 +21,7 @@ Get-Content .\testcase\testcase.txt | .\atms.exe
 .\central.exe
 
 if ( Compare-Object (Get-Content .\updatedMaster.txt) (Get-Content .\testcase\reference_updatedMaster.txt) ) {
-	Write-Output "TESTCASE FAILED"
+	Write-Error "TESTCASE FAILED"
 } 
 else {
 	Write-Output "TESTCASE PASSED"
