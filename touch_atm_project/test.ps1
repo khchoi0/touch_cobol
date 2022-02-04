@@ -21,10 +21,14 @@ Get-Content .\testcase\testcase.txt | .\atms.exe
 .\central.exe
 
 if ( Compare-Object (Get-Content .\updatedMaster.txt) (Get-Content .\testcase\reference_updatedMaster.txt) ) {
+<<<<<<< Updated upstream:touch_atm_project/test.ps1
 	Write-Output "TESTCASE FAILED"
+=======
+	Write-Error "`n>>>>> TESTCASE FAILED`n"
+>>>>>>> Stashed changes:atm_project/test.ps1
 } 
 else {
-	Write-Output "TESTCASE PASSED"
+	Write-Output "`n>>>>> TESTCASE PASSED`n"
 }
 
 foreach ( $file in $files ) { if (Test-Path $file) { Remove-Item $file } }
