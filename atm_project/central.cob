@@ -1,3 +1,22 @@
+      *
+      * CSCI3180 Principles of Programming Languages
+      *
+      * --- Declaration ---
+      *
+      * I declare that the assignment here submitted is original except
+      * for source material explicitly acknowledged. I also acknowledge
+      * that I am aware of University policy and regulations on honesty
+      * in academic work, and of the disciplinary guidelines and
+      * procedures applicable to breaches of such policy and
+      * regulations, as contained in the website
+      * https//www.cuhk.edu.hk/policy/academichonesty/
+      *
+      * Assignment 1
+      * Name        : CHOI, Ka Hou
+      * Student ID  : 1155135747
+      * Email Addr  : 1155135747@link.cuhk.edu.hk
+      *
+
        IDENTIFICATION DIVISION.
        PROGRAM-ID. CENTRAL.
        AUTHOR. KA HOU, CHOI.
@@ -53,6 +72,7 @@
               ACCESS MODE    IS SEQUENTIAL
               FILE STATUS    IS NEGATIVE-REPORT-FILE-STATUS.
 
+      * FOR SORTING
            SELECT WORK-FILE ASSIGN TO "WORK.TMP".
 
        DATA DIVISION.
@@ -120,6 +140,7 @@
            02 REPORT-BALANCE                   PIC S9(13)V9(2)
                                                SIGN LEADING SEPARATE.
 
+      * FOR SORTING
        SD  WORK-FILE.
        01  WORK-RECORD.
            02 WORK-ACCT-NUMBER                 PIC 9(16).
@@ -127,6 +148,8 @@
            02 WORK-TIMESTAMP                   PIC 9(5).
 
        WORKING-STORAGE SECTION.
+
+      * ERROR HANDLING
        01  MASTER-FILE-STATUS                  PIC 99.
            88 MASTER-FILE-EOF-REACHED          VALUE 10.
            88 MASTER-FILE-NOT-FOUND            VALUE 35.
@@ -181,6 +204,8 @@
        SORT-TRANS-FILES.
            DISPLAY SPACES
            DISPLAY "=========================================="
+
+      * SORT trans711.txt: PRIMARY: ACCOUNT NUMBER, SECONDARY: TIMESTAMP
            SORT WORK-FILE
               ON ASCENDING KEY WORK-ACCT-NUMBER
               ON ASCENDING KEY WORK-TIMESTAMP
@@ -188,6 +213,7 @@
               GIVING SORTED-T71-ONE-FILE.
            DISPLAY "SORTED: T71-ONE-FILE".
 
+      * SORT trans713.txt: PRIMARY: ACCOUNT NUMBER, SECONDARY: TIMESTAMP
            SORT WORK-FILE
               ON ASCENDING KEY WORK-ACCT-NUMBER
               ON ASCENDING KEY WORK-TIMESTAMP
@@ -199,18 +225,21 @@
            OPEN INPUT SORTED-T71-ONE-FILE, SORTED-T71-THREE-FILE.
            OPEN OUTPUT SORTED-TRANS-FILE.
 
+      * CHECK IF transSorted711.txt IS EMPTY
            READ SORTED-T71-ONE-FILE
               AT END
                  MOVE HIGH-VALUES TO SORTED-T71-ONE-RECORD
                  SET SORTED-ONE-FILE-EOF-REACHED TO TRUE
            END-READ.
 
+      * CHECK IF transSorted713.txt IS EMPTY
            READ SORTED-T71-THREE-FILE
               AT END
                  MOVE HIGH-VALUES TO SORTED-T71-THREE-RECORD
                  SET SORTED-THREE-FILE-EOF-REACHED TO TRUE
            END-READ.
 
+      * IF AT LEAST ONE TRANS-SORTED FILE IS NOT EMPTY
            IF
               NOT SORTED-ONE-FILE-EOF-REACHED OR
               NOT SORTED-THREE-FILE-EOF-REACHED
@@ -218,13 +247,17 @@
               GO TO MERGE-TRANS-FILES
            END-IF.
 
+      * IF BOTH TRANS-SORTED FILES ARE EMPTY
            DISPLAY "TRANS FILES BOTH EMPTY"
            DISPLAY SPACES
            CLOSE SORTED-T71-ONE-FILE, SORTED-T71-THREE-FILE.
            CLOSE SORTED-TRANS-FILE.
            GO TO UPDATE-MASTER-FILE.
 
+
        MERGE-TRANS-FILES.
+
+      * ACCOUNT NUMBER SAME: WRITE FROM FILE WITH EARLIER TIMESTAMP
            IF
               SORTED-ONE-ACCT-NUMBER = SORTED-THREE-ACCT-NUMBER AND
               SORTED-ONE-TIMESTAMP < SORTED-THREE-TIMESTAMP
@@ -233,12 +266,15 @@
               DISPLAY "[ TS] ONE < THREE: " SORTED-TRANS-RECORD " (711)"
               READ SORTED-T71-ONE-FILE
                  AT END
+
+      * PREVENT WRITING FROM FILE WHICH HAS REACHED EOF
                     MOVE HIGH-VALUES TO SORTED-T71-ONE-RECORD
                     SET SORTED-ONE-FILE-EOF-REACHED TO TRUE
                     DISPLAY "              EOF: SORTED-T71-ONE-FILE"
               END-READ
            END-IF.
 
+      * ACCOUNT NUMBER SAME: WRITE FROM FILE WITH EARLIER TIMESTAMP
            IF
               SORTED-ONE-ACCT-NUMBER = SORTED-THREE-ACCT-NUMBER AND
               SORTED-ONE-TIMESTAMP > SORTED-THREE-TIMESTAMP
@@ -247,36 +283,45 @@
               DISPLAY "[ TS] ONE > THREE: " SORTED-TRANS-RECORD " (713)"
               READ SORTED-T71-THREE-FILE
                  AT END
+
+      * PREVENT WRITING FROM FILE WHICH HAS REACHED EOF
                     MOVE HIGH-VALUES TO SORTED-T71-THREE-RECORD
                     SET SORTED-THREE-FILE-EOF-REACHED TO TRUE
                     DISPLAY "              EOF: SORTED-T71-THREE-FILE"
               END-READ
            END-IF.
 
+      * WRITE FROM FILE WITH SMALLER ACCOUNT NUMBER
            IF SORTED-ONE-ACCT-NUMBER < SORTED-THREE-ACCT-NUMBER
            THEN
               WRITE SORTED-TRANS-RECORD FROM SORTED-T71-ONE-RECORD
               DISPLAY "[NUM] ONE < THREE: " SORTED-TRANS-RECORD " (711)"
               READ SORTED-T71-ONE-FILE
                  AT END
+
+      * PREVENT WRITING FROM FILE WHICH HAS REACHED EOF
                     MOVE HIGH-VALUES TO SORTED-T71-ONE-RECORD
                     SET SORTED-ONE-FILE-EOF-REACHED TO TRUE
                     DISPLAY "              EOF: SORTED-T71-ONE-FILE"
               END-READ
            END-IF.
 
+      * WRITE FROM FILE WITH SMALLER ACCOUNT NUMBER
            IF SORTED-ONE-ACCT-NUMBER > SORTED-THREE-ACCT-NUMBER
            THEN
               WRITE SORTED-TRANS-RECORD FROM SORTED-T71-THREE-RECORD
               DISPLAY "[NUM] ONE > THREE: " SORTED-TRANS-RECORD " (713)"
               READ SORTED-T71-THREE-FILE
                  AT END
+
+      * PREVENT WRITING FROM FILE WHICH HAS REACHED EOF
                     MOVE HIGH-VALUES TO SORTED-T71-THREE-RECORD
                     SET SORTED-THREE-FILE-EOF-REACHED TO TRUE
                     DISPLAY "              EOF: SORTED-T71-THREE-FILE"
               END-READ
            END-IF.
 
+      * IF AT LEAST ONE TRANS-SORTED FILE'S EOF IS NOT REACHED
            IF
               NOT SORTED-ONE-FILE-EOF-REACHED OR
               NOT SORTED-THREE-FILE-EOF-REACHED
@@ -284,14 +329,29 @@
              GO TO MERGE-TRANS-FILES
            END-IF.
 
+      * BOTH TRANS-SORTED FILES' EOF IS REACHED
            DISPLAY "           MERGED: [TWO] TRANSAC FILES"
            CLOSE SORTED-T71-ONE-FILE, SORTED-T71-THREE-FILE.
            CLOSE SORTED-TRANS-FILE.
            GO TO UPDATE-MASTER-FILE.
 
+
+      * UPDATE-MASTER-FILE PSEUDOCODE:
+      *    LOOP UNTIL MASTER-FILE EOF REACHED:
+      *       FETCH ONE ACCOUNT FROM MASTER-FILE
+      *       CHECK TRANS-SORTED-FILE FOR THE ACCOUNT
+      *       IF TRANSACTION RECORD FOUND, UPDATE
+      *       WRITE TO UPDATED-MASTER-FILE
+      *       CONTINUE LOOP
        UPDATE-MASTER-FILE.
+
+      * IF NEED NEXT ACCOUNT FOR SEARCHING
            IF NEXT-ACCT
            THEN
+
+      * AFTER AT LEAST ONE LOOP BACK:
+      *    WRITE LAST UPDATED-MASTER-RECORD
+      *    REOPEN THE TRANS-SORTED-FILE FOR NEXT ACCOUNT SEARCHING
               IF ITERATION-INITIALIZED
               THEN
                  WRITE UPDATED-MASTER-RECORD FROM MASTER-RECORD
@@ -301,6 +361,7 @@
                  OPEN INPUT SORTED-TRANS-FILE
               END-IF
 
+      * OPEN NECESSARY IO-FILES
               IF NOT ITERATION-INITIALIZED
               THEN
                  OPEN INPUT MASTER-FILE, SORTED-TRANS-FILE
@@ -308,8 +369,11 @@
                  SET ITERATION-INITIALIZED TO TRUE
               END-IF
 
+      * FETCH ONE ACCOUNT FROM MASTER-FILE
               READ MASTER-FILE
                  AT END
+
+      * BREAK LOOP HERE
                     SET MASTER-FILE-EOF-REACHED TO TRUE
                     DISPLAY "EOF: MASTER-FILE"
                     DISPLAY "=========================================="
@@ -317,6 +381,9 @@
                     CLOSE SORTED-TRANS-FILE
                     GO TO GENERATE-NEGATIVE-REPORT
               END-READ
+
+      * MEANING OF SEARCHING-FOR-ACCT-TRANSAC:
+      *    DO NOT NEED NEXT ACCT FOR SEARCHING
               SET SEARCHING-FOR-ACCT-TRANSAC TO TRUE
               DISPLAY "=========================================="
               DISPLAY SPACES
@@ -325,6 +392,7 @@
               DISPLAY "TRANSACTION RECORD SEARCHING: "
            END-IF.
 
+      * SEARCH TRANSACTION FOR THE ACCOUNT
            READ SORTED-TRANS-FILE
               AT END
                  SET NEXT-ACCT TO TRUE
@@ -334,6 +402,10 @@
                  GO TO UPDATE-MASTER-FILE
            END-READ.
 
+      * NEED NEXT ACCOUNT FOR SEARCHING:
+      *    IF UPCOMING TRANSACTION ACCOUNT NUMBER IS LARGER
+      *    THAN THE ACCOUNT NUMBER IN THE MASTER FILE
+      * PS.: ASSUMPTION: BOTH TRANS-SORTED AND MASTER FILE ARE SORTED
            IF
               SORTED-TRANS-ACCT-NUMBER > MSTR-ACCT-NUMBER
            THEN
@@ -344,6 +416,7 @@
            END-IF.
            DISPLAY "> " SORTED-TRANS-RECORD  " <".
 
+      * TRANSACTION RECORD FOUND
            IF SORTED-TRANS-ACCT-NUMBER = MSTR-ACCT-NUMBER
            THEN
               DISPLAY "~~~~~~~~~~> ORIGINAL BALANCE: " MSTR-ACCT-BALANCE
@@ -351,21 +424,27 @@
                       SORTED-TRANS-OPERATION "        "
                       SORTED-TRANS-AMOUNT
 
+      * UPDATE BALANCE IF DEPOSIT
               IF SORTED-TRANS-OPERATION = "D"
               THEN
                  ADD SORTED-TRANS-AMOUNT TO MSTR-ACCT-BALANCE
                     GIVING MSTR-ACCT-BALANCE
               END-IF
+
+      * UPDATE BALANCE IF WITHDRAWAL
               IF SORTED-TRANS-OPERATION = "W"
               THEN
                  SUBTRACT SORTED-TRANS-AMOUNT FROM MSTR-ACCT-BALANCE
                     GIVING MSTR-ACCT-BALANCE
               END-IF
+
               DISPLAY "~~~~~~~~~~>  UPDATED BALANCE: " MSTR-ACCT-BALANCE
               DISPLAY SPACES
            END-IF.
 
+      * KEEP SEARCHING TRANS-SORTED FILE
            GO TO UPDATE-MASTER-FILE.
+
 
        GENERATE-NEGATIVE-REPORT.
            IF
@@ -378,12 +457,15 @@
 
            READ UPDATED-MASTER-FILE
               AT END
+
+      * BREAK LOOP HERE
                  DISPLAY "=========================================="
                  DISPLAY SPACES
                  CLOSE UPDATED-MASTER-FILE, NEGATIVE-REPORT-FILE
                  STOP RUN
            END-READ.
 
+      * WRITE REPORT IF FOUND NEGATIVE ACCOUNT BALANCE
            IF UPDATED-ACCT-BALANCE IS NEGATIVE
            THEN
               MOVE UPDATED-ACCT-HOLDER-NAME TO BARRED-HOLDER-NAME

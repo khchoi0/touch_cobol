@@ -1,3 +1,22 @@
+      *
+      * CSCI3180 Principles of Programming Languages
+      *
+      * --- Declaration ---
+      *
+      * I declare that the assignment here submitted is original except
+      * for source material explicitly acknowledged. I also acknowledge
+      * that I am aware of University policy and regulations on honesty
+      * in academic work, and of the disciplinary guidelines and
+      * procedures applicable to breaches of such policy and
+      * regulations, as contained in the website
+      * https//www.cuhk.edu.hk/policy/academichonesty/
+      *
+      * Assignment 1
+      * Name        : CHOI, Ka Hou
+      * Student ID  : 1155135747
+      * Email Addr  : 1155135747@link.cuhk.edu.hk
+      *
+
        IDENTIFICATION DIVISION.
        PROGRAM-ID. ATMS.
        AUTHOR. KA HOU, CHOI.
@@ -49,6 +68,8 @@
            02 THREE-TIMESTAMP               PIC 9(5).
 
        WORKING-STORAGE SECTION.
+
+      * ERROR HANDLING
        01  MASTER-FILE-STATUS               PIC 99.
            88 MASTER-FILE-EOF-REACHED       VALUE 10.
            88 MASTER-FILE-NOT-FOUND         VALUE 35.
@@ -59,8 +80,8 @@
            88 T71-THREE-FILE-ALREADY-OPEN   VALUE 41.
 
        01  USER-ATM-CHOICE                  PIC 999.
-           88 ATM-71-ONE                    VALUE 711 1.
-           88 ATM-71-THREE                  VALUE 713 2.
+           88 ATM-71-ONE                    VALUE 1.
+           88 ATM-71-THREE                  VALUE 2.
 
        01  VALIDATE-ACCT-INFO-FOR           PIC 9.
            88 VALIDATING-USER               VALUE 1.
@@ -77,7 +98,7 @@
            88 WITHDRAWAL                    VALUE "W".
            88 TRANSFER                      VALUE "T".
 
-       01  TARGET-ACCT-NUNBER               PIC 9(16).
+       01  TARGET-ACCT-NUMBER               PIC 9(16).
 
        01  TRANSAC-AMOUNT                   PIC 9(5)V9(2).
 
@@ -121,11 +142,13 @@
            DISPLAY "=> PRESS 2 FOR ATM 713"
            ACCEPT USER-ATM-CHOICE.
 
+      * VALID INPUT
            IF ATM-71-ONE OR ATM-71-THREE
            THEN
               GO TO INPUT-ACCT-INFO
            END-IF.
 
+      * INVALID INPUT
            DISPLAY "=> INVALID INPUT"
            GO TO CHOOSE-ATM.
 
@@ -136,6 +159,7 @@
            DISPLAY "=> PASSWORD"
            ACCEPT USER-ACCT-PASSWORD.
 
+      * VALIDATE USER ACCT INFO
            SET VALIDATING-USER TO TRUE.
            GO TO VALIDATE-ACCT-INFO.
 
@@ -146,16 +170,19 @@
            DISPLAY "=> PRESS T FOR TRANSFER"
            ACCEPT USER-SERVICE-CHOICE.
 
+      * VALID INPUT: D / W
            IF DEPOSIT OR WITHDRAWAL
            THEN
               GO TO INPUT-AMOUNT
            END-IF.
 
+      * VALID INPUT: T
            IF TRANSFER
            THEN
               GO TO INPUT-TARGET-INFO
            END-IF.
 
+      * INVALID INPUT
            DISPLAY "=> INVALID INPUT"
            GO TO CHOOSE-SERVICE.
 
@@ -169,30 +196,34 @@
               USER-SERVICE-CHOICE  SPACE
               TRANSAC-AMOUNT.
 
+      * INVALID INPUT
            IF TRANSAC-AMOUNT < 0
            THEN
               DISPLAY "=> INVALID INPUT"
               GO TO INPUT-AMOUNT
            END-IF.
 
+      * IF TRANSFERRING OR WITHDRAWING, THEN CHECK USER ACCOUNT BALANCE
            IF NOT DEPOSIT AND TRANSAC-AMOUNT > USER-ACCT-BALANCE
            THEN
               DISPLAY "=> INSUFFICIENT BALANCE"
               GO TO INPUT-AMOUNT
            END-IF.
 
+      * VALID INPUT
            GO TO GENERATE-TRANSAC-RECORD.
 
        INPUT-TARGET-INFO.
            DISPLAY "=> TARGET ACCOUNT"
-           ACCEPT TARGET-ACCT-NUNBER.
+           ACCEPT TARGET-ACCT-NUMBER.
 
-           IF TARGET-ACCT-NUNBER = USER-ACCT-NUMBER
+           IF TARGET-ACCT-NUMBER = USER-ACCT-NUMBER
            THEN
               DISPLAY "=> YOU CANNOT TRANSFER TO YOURSELF"
               GO TO INPUT-TARGET-INFO
            END-IF.
 
+      * VALIDATE TARGET ACCT INFO
            SET VALIDATING-TARGET TO TRUE.
            GO TO VALIDATE-ACCT-INFO.
 
@@ -217,7 +248,7 @@
               END-IF
               IF DONE-WITHDRAW
               THEN
-                 MOVE TARGET-ACCT-NUNBER TO TRANSAC-BUF-ACCT-NUMBER
+                 MOVE TARGET-ACCT-NUMBER TO TRANSAC-BUF-ACCT-NUMBER
                  MOVE "D"                TO TRANSAC-BUF-OPERATION
                  MOVE TRANSAC-AMOUNT     TO TRANSAC-BUF-AMOUNT
                  SET DONE-DEPOSIT TO TRUE
@@ -233,27 +264,29 @@
               OPEN OUTPUT T71-ONE-FILE, T71-THREE-FILE
            END-IF.
 
+      * USER CHOSE ATM 711
            IF ATM-71-ONE
            THEN
-              SET ATM-71-ONE TO TRUE
               WRITE T71-ONE-RECORD FROM TRANSAC-BUFFER
               DISPLAY "==> [ATM-711]: " TRANSAC-BUFFER
               ADD 1 TO TRANSAC-BUF-TIMESTAMP
            END-IF.
 
+      * USER CHOSE ATM713
            IF ATM-71-THREE
            THEN
-              SET ATM-71-THREE TO TRUE
               WRITE T71-THREE-RECORD FROM TRANSAC-BUFFER
               DISPLAY "==> [ATM-713]: " TRANSAC-BUFFER
               ADD 1 TO TRANSAC-BUF-TIMESTAMP
            END-IF.
 
+      * TRANSFERRING: AFTER WITHDRAWAL, THEN GENERATE DEPOSIT RECORD
            IF TRANSFER AND NOT DONE-DEPOSIT
            THEN
               GO TO GENERATE-TRANSAC-RECORD
            END-IF.
 
+      * FINISHED TRANSACTION RECORD WRITE
            SET INITIAL-TRANSFER-STATUS TO TRUE.
            GO TO CHOOSE-IF-CONTINUE.
 
@@ -263,19 +296,22 @@
            DISPLAY "=> Y FOR YES"
            ACCEPT IF-CONTINUE-CHOICE.
 
+      * VALID INPUT: Y
            IF CONTINUE-YES
            THEN
               GO TO ATM-INITIALIZE
            END-IF.
 
-           IF NOT CONTINUE-NO
+      * VALID INPUT: N
+           IF CONTINUE-NO
            THEN
-              DISPLAY "=> INVALID INPUT"
-              GO TO CHOOSE-IF-CONTINUE
+              CLOSE T71-ONE-FILE, T71-THREE-FILE
+              STOP RUN
            END-IF.
 
-           CLOSE T71-ONE-FILE, T71-THREE-FILE.
-           STOP RUN.
+      * INVALID INPUT
+           DISPLAY "=> INVALID INPUT"
+           GO TO CHOOSE-IF-CONTINUE.
 
        VALIDATE-ACCT-INFO.
            IF NOT MASTER-FILE-ALREADY-OPEN
@@ -287,6 +323,7 @@
               AT END SET MASTER-FILE-EOF-REACHED TO TRUE
            END-READ.
 
+      * RECORD NOT FOUND
            IF MASTER-FILE-EOF-REACHED
            THEN
               CLOSE MASTER-FILE
@@ -302,27 +339,34 @@
               END-IF
            END-IF.
 
+      * USER RECORD FOUND
            IF VALIDATING-USER AND
               MSTR-ACCT-INFO = USER-ACCT-INFO
            THEN
+
+      * USER BALANCE IS NEGATIVE
               IF MSTR-ACCT-BALANCE IS NEGATIVE
               THEN
                  DISPLAY "=> NEGATIVE REMAINS TRANSACTION ABORT"
                  CLOSE MASTER-FILE
                  GO TO ATM-INITIALIZE
               END-IF
+
+      * USER BALANCE IS POSITIVE
               MOVE MSTR-ACCT-BALANCE TO USER-ACCT-BALANCE
               CLOSE MASTER-FILE
               GO TO CHOOSE-SERVICE
            END-IF.
 
+      * TARGET RECORD FOUND
            IF VALIDATING-TARGET AND
-              MSTR-ACCT-NUMBER = TARGET-ACCT-NUNBER
+              MSTR-ACCT-NUMBER = TARGET-ACCT-NUMBER
            THEN
               CLOSE MASTER-FILE
               GO TO INPUT-AMOUNT
            END-IF.
 
+      * CONTINUE SEARCHING LOOP
            GO TO VALIDATE-ACCT-INFO.
 
        END PROGRAM ATMS.
